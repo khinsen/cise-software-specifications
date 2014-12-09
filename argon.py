@@ -9,6 +9,9 @@ class Vector(object):
 
 class Cell(object):
 
+    def check_configuration(self, configuration):
+        raise NotImplementedError
+
     def distance(self, p1, p2):
         raise NotImplementedError
 
