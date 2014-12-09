@@ -1,0 +1,147 @@
+fmod VECTOR is
+    including FLOAT .
+    sort Vector .
+    op (_ _ _) : Float Float Float -> Vector .
+endfm
+
+view Vector from TRIV to VECTOR is
+  sort Elt to Vector .
+endv
+
+fmod CONFIGURATION is
+    including VECTOR .
+    including LIST{Vector} * (sort List{Vector} to Configuration) .
+endfm
+
+fth CELL is
+    including VECTOR .
+    sort Cell .
+    op distance : Cell Vector Vector -> Float .
+endfth
+
+fmod INFINITE-CELL is
+    including FLOAT .
+    including VECTOR .
+    sort Cell .
+    op universe : -> Cell .
+    op distance : Cell Vector Vector -> Float .
+    vars x1 y1 z1 x2 y2 z2 : Float .
+    var u : Cell .
+    eq distance(u, (x1 y1 z1), (x2 y2 z2)) =
+           sqrt(((x2 - x1) ^ 2.0) + ((y2 - y1) ^ 2.0) + ((z2 - z1) ^ 2.0)) .
+endfm
+
+view INFINITE-CELL from CELL to INFINITE-CELL is
+endv
+
+fmod ORTHORHOMBIC-CELL is
+    including FLOAT .
+    including VECTOR .
+    sort Cell .
+    op universe : Float Float Float -> Cell .
+    op distance : Cell Vector Vector -> Float .
+    vars lx ly lz x1 y1 z1 x2 y2 z2 dx : Float .
+    eq distance(universe(lx, ly, lz), (x1 y1 z1), (x2 y2 z2)) =
+           sqrt((d(lx, x2 - x1) ^ 2.0)
+              + (d(ly, y2 - y1) ^ 2.0)
+              + (d(lz, z2 - z1) ^ 2.0)) .
+    op d : Float Float -> Float .
+    ceq d(lx, dx) = dx - lx if dx > (lx / 2.0) .
+    ceq d(lx, dx) = dx + lx if dx < -(lx / 2.0) .
+    eq d(lx, dx) = dx [owise] .
+endfm
+
+view ORTHORHOMBIC-CELL from CELL to ORTHORHOMBIC-CELL is
+endv
+
+fmod LENNARD-JONES-PAIR is
+    including FLOAT .
+    op LJRadius : -> Float .
+    eq LJRadius = 0.34 . *** nm
+    op LJEnergy : -> Float .
+    eq LJEnergy = 1.0 .  *** kJ/mol
+    op LJCutoff : -> Float .
+    eq LJCutoff = 1.5 .  *** nm
+    var R : Float .
+    op $sr6 : Float -> Float .
+    eq $sr6(R) = if (R < LJCutoff)
+                   then (LJRadius ^ 6.0) / (R ^ 6.0)
+                   else 0.0 fi .
+    op pairEnergy : Float -> Float .
+    eq pairEnergy(R) = 4.0 * LJEnergy * ( $sr6(R) * $sr6(R) - $sr6(R) ) .
+endfm
+
+fmod LENNARD-JONES-ENERGY{U :: CELL} is
+    including FLOAT .
+    including LENNARD-JONES-PAIR .
+    including VECTOR .
+    including CONFIGURATION .
+    op potentialEnergy : U$Cell Configuration -> Float .
+    var U : U$Cell .
+    var R : Configuration .
+    vars R1 R2 : Vector .
+    eq potentialEnergy(U, R1) = 0.0 .
+    eq potentialEnergy(U, R1 R) = oneWithOthers(U, R1, R)
+                                  + potentialEnergy(U, R) .
+    op oneWithOthers : U$Cell Vector Configuration -> Float .
+    eq oneWithOthers(U, R1, R2) = pairEnergy(distance(U, R1, R2)) .
+    eq oneWithOthers(U, R1, R2 R) = pairEnergy(distance(U, R1, R2))
+                                    + oneWithOthers(U, R1, R) .
+endfm
+
+fmod TRIANGLE is
+    including INFINITE-CELL .
+    including LENNARD-JONES-ENERGY{INFINITE-CELL} .
+    including CONFIGURATION .
+    op h : -> Float .
+    eq h = 0.3 .
+    op conf : -> Configuration .
+    eq conf = (0.0 0.0 0.0) (h 0.0 0.0) ((0.5 * h) (0.5 * h * sqrt(3.0)) 0.0) .
+endfm
+
+fmod CUBIC-LATTICE is
+    including ORTHORHOMBIC-CELL .
+    including LENNARD-JONES-ENERGY{ORTHORHOMBIC-CELL} .
+    including CONFIGURATION .
+    including INT .
+    including CONVERSION .
+    op u : -> Cell .
+    op conf : -> Configuration .
+    op h : -> Float .
+    eq h = 0.375 .
+    vars X Y Z : Int .
+    op point : Int Int Int -> Vector .
+    eq point(X, Y, Z) = ((h * float(X)) (h * float(Y)) (h * float(Z))) .
+endfm
+
+fmod CUBIC-LATTICE-2 is
+    including CUBIC-LATTICE .
+    eq u = universe(2.0 * h, 2.0 * h, 2.0 * h) .
+    eq conf = point(0, 0, 0)  point(0, 0, 1)  point(0, 1, 0)  point(0, 1, 1)
+              point(1, 0, 0)  point(1, 0, 1)  point(1, 1, 0)  point(1, 1, 1) .
+endfm
+
+fmod CUBIC-LATTICE-4 is
+    including CUBIC-LATTICE .
+    eq u = universe(4.0 * h, 4.0 * h, 4.0 * h) .
+    eq conf = point(0, 0, 0)  point(0, 0, 1)  point(0, 0, 2)  point(0, 0, 3)
+              point(0, 1, 0)  point(0, 1, 1)  point(0, 1, 2)  point(0, 1, 3)
+              point(0, 2, 0)  point(0, 2, 1)  point(0, 2, 2)  point(0, 2, 3)
+              point(0, 3, 0)  point(0, 3, 1)  point(0, 3, 2)  point(0, 3, 3)
+              point(1, 0, 0)  point(1, 0, 1)  point(1, 0, 2)  point(1, 0, 3)
+              point(1, 1, 0)  point(1, 1, 1)  point(1, 1, 2)  point(1, 1, 3)
+              point(1, 2, 0)  point(1, 2, 1)  point(1, 2, 2)  point(1, 2, 3)
+              point(1, 3, 0)  point(1, 3, 1)  point(1, 3, 2)  point(1, 3, 3)
+              point(2, 0, 0)  point(2, 0, 1)  point(2, 0, 2)  point(2, 0, 3)
+              point(2, 1, 0)  point(2, 1, 1)  point(2, 1, 2)  point(2, 1, 3)
+              point(2, 2, 0)  point(2, 2, 1)  point(2, 2, 2)  point(2, 2, 3)
+              point(2, 3, 0)  point(2, 3, 1)  point(2, 3, 2)  point(2, 3, 3)
+              point(3, 0, 0)  point(3, 0, 1)  point(3, 0, 2)  point(3, 0, 3)
+              point(3, 1, 0)  point(3, 1, 1)  point(3, 1, 2)  point(3, 1, 3)
+              point(3, 2, 0)  point(3, 2, 1)  point(3, 2, 2)  point(3, 2, 3)
+              point(3, 3, 0)  point(3, 3, 1)  point(3, 3, 2)  point(3, 3, 3) .
+endfm
+
+reduce in TRIANGLE : potentialEnergy(universe, conf) .
+reduce in CUBIC-LATTICE-2 : potentialEnergy(u, conf) .
+reduce in CUBIC-LATTICE-4 : potentialEnergy(u, conf) .
