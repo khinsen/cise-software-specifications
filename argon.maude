@@ -46,9 +46,11 @@ fmod ORTHORHOMBIC-CELL is
               + (d(ly, y2 - y1) ^ 2.0)
               + (d(lz, z2 - z1) ^ 2.0)) .
     op d : Float Float -> Float .
-    ceq d(lx, dx) = dx - lx if dx > (lx / 2.0) .
-    ceq d(lx, dx) = dx + lx if dx < -(lx / 2.0) .
-    eq d(lx, dx) = dx [owise] .
+    eq d(lx, dx) = if dx > (lx / 2.0)
+                   then dx - lx
+                   else if dx < -(lx / 2.0)
+                        then dx + lx
+                        else dx  fi  fi .
 endfm
 
 view ORTHORHOMBIC-CELL from CELL to ORTHORHOMBIC-CELL is
