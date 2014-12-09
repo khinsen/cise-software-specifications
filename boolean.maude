@@ -1,0 +1,27 @@
+fmod BOOLEAN is
+
+  sort Boolean .
+
+  op *true* : -> Boolean .
+  op *false* : -> Boolean .
+
+  op *not* : Boolean -> Boolean .
+  op *and* : Boolean Boolean -> Boolean .
+  op *or* : Boolean Boolean -> Boolean .
+
+  var A : Boolean .
+
+  eq *not*(*true*) = *false* .
+  eq *not*(*false*) = *true* .
+
+  eq *and*(*true*, A) = A .
+  eq *and*(A, *true*) = A .
+  eq *and*(*false*, A) = *false* .
+  eq *and*(A, *false*) = *false* .
+
+  eq *or*(*true*, A) = *true* .
+  eq *or*(A, *true*) = *true* .
+  eq *or*(*false*, A) = A .
+  eq *or*(A, *false*) = A .
+
+endfm
